@@ -3693,14 +3693,17 @@ function run() {
                 repo: github.context.repo.repo
             };
             if (isTaskCompleted) {
+                core.debug('Task is completed');
                 check.status = 'completed';
                 check.conclusion = 'success';
             }
             else if (handleMissingTaskAsError) {
+                core.debug('Uncompleted tasks - mark as error');
                 check.status = 'completed';
                 check.conclusion = 'failure';
             }
             else {
+                core.debug('Uncompleted tasks - mark as pending');
                 check.status = 'in_progress';
             }
             yield githubApi.checks.create(check);

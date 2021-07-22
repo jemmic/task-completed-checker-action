@@ -62,12 +62,15 @@ async function run(): Promise<void> {
       repo: github.context.repo.repo
     }
     if (isTaskCompleted) {
+      core.debug('Task is completed')
       check.status = 'completed'
       check.conclusion = 'success'
     } else if (handleMissingTaskAsError) {
+      core.debug('Uncompleted tasks - mark as error')
       check.status = 'completed'
       check.conclusion = 'failure'
     } else {
+      core.debug('Uncompleted tasks - mark as pending')
       check.status = 'in_progress'
     }
     await githubApi.checks.create(check)
