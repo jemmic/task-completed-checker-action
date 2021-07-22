@@ -628,9 +628,6 @@ function run() {
                 name: appName,
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
                 head_sha: (_c = github.context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.head.sha,
-                status: 'completed',
-                conclusion: isTaskCompleted ? 'success' : 'failure',
-                completed_at: new Date().toISOString(),
                 output: {
                     title: appName,
                     summary: isTaskCompleted
@@ -645,11 +642,13 @@ function run() {
                 core.debug('Task is completed');
                 check.status = 'completed';
                 check.conclusion = 'success';
+                check.completed_at = new Date().toISOString();
             }
             else if (handleMissingTaskAsError) {
                 core.debug('Uncompleted tasks - mark as error');
                 check.status = 'completed';
                 check.conclusion = 'failure';
+                check.completed_at = new Date().toISOString();
             }
             else {
                 core.debug('Uncompleted tasks - mark as pending');
