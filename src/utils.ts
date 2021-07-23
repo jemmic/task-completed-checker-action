@@ -1,10 +1,15 @@
 import marked from 'marked'
 
 export function removeIgnoreTaskListText(text: string): string {
-  return text.replace(
-    /<!-- ignore-task-list-start -->[\s| ]*([-*] \[[xX ]\]( .+)?[\s| ]*)+<!-- ignore-task-list-end -->/g,
-    ''
-  )
+  return text
+    .replace(
+      /<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g,
+      ''
+    )
+    .replace(
+      /<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g,
+      ''
+    )
 }
 
 export interface Tasks {

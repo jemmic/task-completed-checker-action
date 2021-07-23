@@ -5989,7 +5989,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTaskListText = exports.getTasks = exports.removeIgnoreTaskListText = void 0;
 const marked_1 = __importDefault(__webpack_require__(886));
 function removeIgnoreTaskListText(text) {
-    return text.replace(/<!-- ignore-task-list-start -->[\s| ]*([-*] \[[xX ]\]( .+)?[\s| ]*)+<!-- ignore-task-list-end -->/g, '');
+    return text.replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '').replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '');
 }
 exports.removeIgnoreTaskListText = removeIgnoreTaskListText;
 function getTasks(text) {

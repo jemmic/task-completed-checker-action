@@ -34,6 +34,43 @@ describe('removeIgnoreTaskListText', () => {
     - [x] New and existing unit tests pass locally with my changes`)
   })
 
+  it('ignore task list can contain arbitrary text.', () => {
+    const text = `## Issue Type
+    <!-- ignore-task-list-start -->
+    - [ ] Bug
+    * [ ] Document
+    Bla bla bla
+    - [x] Enhancement Feature
+    <!-- ignore-task-list-end -->
+    
+    ## Checklist
+    - [x] I have made corresponding changes to the documentation`
+
+    const result = removeIgnoreTaskListText(text)
+
+    expect(result).toEqual(`## Issue Type
+    
+    
+    ## Checklist
+    - [x] I have made corresponding changes to the documentation`)
+  })
+
+  it('ignore task list can remain open-ended.', () => {
+    const text = `## Checklist
+    - [x] I have made corresponding changes to the documentation
+    
+    <!-- ignore-task-list-start -->
+    - [ ] Bug
+    * [ ] Document`
+
+    const result = removeIgnoreTaskListText(text)
+
+    expect(result).toEqual(`## Checklist
+    - [x] I have made corresponding changes to the documentation
+    
+    `)
+  })
+
   it('removes single ignore task list from task list text.', () => {
     const text = `<!-- ignore-task-list-start -->
     - [ ] foo
