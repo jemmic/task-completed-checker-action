@@ -22,7 +22,7 @@ export function getTasks(text: string): Tasks {
     completed: [],
     uncompleted: []
   }
-  if (text === null) {
+  if (!text) {
     return result
   }
   const withoutIgnored = removeIgnoreTaskListText(text)
