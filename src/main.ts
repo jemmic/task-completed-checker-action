@@ -28,7 +28,7 @@ async function run(): Promise<void> {
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
 
-    let pr: simplePR | undefined = github.context.payload.pull_request
+    let pr: simplePR | undefined = github.context.payload.pull_request as simplePR | undefined
     core.debug(`Received payload: ${JSON.stringify(github.context.payload)}`)
     // check if this is an issue rather than pull event
     if (github.context.eventName === 'issue_comment' && !pr) {
