@@ -10,14 +10,22 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
+permissions:
+  # Pull requests and related comments, assignees, labels, milestones, and merges.
+  # https://developer.github.com/v3/apps/permissions/#permission-on-pull-requests
+  pull-requests: read
+  # Checks on code.
+  # https://developer.github.com/v3/apps/permissions/#permission-on-checks
+  checks: write
+
 jobs:
   task-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: jemmic/task-completed-checker-action@v1.0.0
+      - uses: jemmic/task-completed-checker-action@v1.2.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          missing-as-error: false
+          uncompleted-as-error: false
 ```
 
 ### Check whether tasks are completed
@@ -74,12 +82,12 @@ Please surround the task list with `<!-- ignore-task-list-start -->` and `<!-- i
 
 ### Treat uncompleted tasks as error
 By default, Tasks Completed Check treats uncompleted tasks as pending.
-By setting the optional `missing-as-error` parameter to `true`, uncompleted tasks will be treated as an error.
+By setting the optional `uncompleted-as-error` parameter to `true`, if there are uncompleted tasks this will be treated as an error.
 ```
       - uses: jemmic/task-completed-checker-action@v1.0.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          missing-as-error: true
+          uncompleted-as-error: true
 ```
 
 ![Check whether tasks are completed (treated as error)](check_result_error.png)
@@ -87,6 +95,30 @@ By setting the optional `missing-as-error` parameter to `true`, uncompleted task
 You can check a list of completed tasks and uncompleted tasks at the Actions page.
 
 ![Check a list of completed/uncompleted tasks (treated as error)](actions_console_error.png)
+
+### Scan all comments for tasks as well
+By default, Tasks Completed Check only scans the pull-request description for task lists.
+By setting the optional `scan-comments` parameter to `true`, also all comments on a pull request (comment, review, review comment) will be scanned for task lists.
+
+If comments should be scanned, we need to specify the following on events:
+
+```
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+  issue_comment:
+  pull_request_review:
+  pull_request_review_comment:
+```
+
+The `scan-comments` parameter needs to be passed to the `task-completed-checker-action`:
+
+```
+      - uses: jemmic/task-completed-checker-action@v1.2.0
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          scan-comments: true
+```
 
 ## :memo: Licence
 MIT

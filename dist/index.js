@@ -646,70 +646,100 @@ const core = __importStar(__webpack_require__(470));
 const github = __importStar(__webpack_require__(469));
 const utils_1 = __webpack_require__(611);
 function run() {
-    var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const body = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.body;
+            const startTime = new Date().toISOString();
             const token = core.getInput('repo-token', { required: true });
-            const handleMissingTaskAsError = core.getBooleanInput('missing-as-error');
+            const handleUncompletedTaskAsError = core.getBooleanInput('uncompleted-as-error');
+            const scanComments = core.getBooleanInput('scan-comments');
             const githubApi = github.getOctokit(token);
             const appName = 'Task Completed Checker';
-            if (!body) {
-                core.info('no task list and skip the process.');
-                yield githubApi.rest.checks.create({
-                    name: appName,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-                    head_sha: (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha,
-                    status: 'completed',
-                    conclusion: 'success',
-                    completed_at: new Date().toISOString(),
-                    output: {
-                        title: appName,
-                        summary: 'No task list',
-                        text: 'No task list'
-                    },
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo
-                });
+            let pr = github.context.payload.pull_request;
+            core.debug(`Received payload: ${JSON.stringify(github.context.payload)}`);
+            // check if this is an issue rather than pull event
+            if (github.context.eventName === 'issue_comment' && !pr) {
+                const commentPayload = github.context.payload;
+                // if so we need to make sure this is for a PR only
+                if (!commentPayload.issue.pull_request) {
+                    core.info('Triggered for issue rather than PR, exit...');
+                    return;
+                }
+                // & lookup the PR it's for to continue
+                const response = yield githubApi.rest.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: commentPayload.issue.number }));
+                pr = response.data;
+            }
+            if (!pr) {
+                core.warning('PR is unknown, exit...');
                 return;
             }
-            const result = utils_1.removeIgnoreTaskListText(body);
-            core.debug('creates a list of tasks which removed ignored task: ');
-            core.debug(result);
-            const tasks = utils_1.getTasks(result);
+            const tasks = utils_1.getTasks(pr.body);
+            if (scanComments) {
+                let comments = [];
+                // lookup comments on the PR
+                const commentsResponse = yield githubApi.rest.issues.listComments(Object.assign(Object.assign({}, github.context.repo), { per_page: 100, issue_number: pr.number }));
+                if (commentsResponse.data.length) {
+                    comments = comments.concat(commentsResponse.data);
+                }
+                // as well as review comments
+                const reviewCommentsResponse = yield githubApi.rest.pulls.listReviews(Object.assign(Object.assign({}, github.context.repo), { per_page: 100, pull_number: pr.number }));
+                if (reviewCommentsResponse.data.length) {
+                    comments = comments.concat(reviewCommentsResponse.data);
+                }
+                // and diff level comments on reviews
+                const reviewDiffCommentsResponse = yield githubApi.rest.pulls.listReviewComments(Object.assign(Object.assign({}, github.context.repo), { per_page: 100, pull_number: pr.number }));
+                if (reviewDiffCommentsResponse.data.length) {
+                    comments = comments.concat(reviewDiffCommentsResponse.data);
+                }
+                // sort comments from oldest to newest
+                comments.sort((a, b) => (a.created_at || a.submitted_at || '') > (b.created_at || b.submitted_at || '') ? 1 : -1);
+                for (const comment of comments) {
+                    const commentTasks = utils_1.getTasks(comment.body);
+                    tasks.completed = tasks.completed.concat(commentTasks.completed);
+                    tasks.uncompleted = tasks.uncompleted.concat(commentTasks.uncompleted);
+                }
+            }
             const isTaskCompleted = tasks.uncompleted.length === 0;
             const text = utils_1.createTaskListText(tasks);
-            core.debug('creates a list of completed tasks and uncompleted tasks: ');
+            core.debug('created a list of completed tasks and uncompleted tasks:');
             core.debug(text);
-            const check = {
-                name: appName,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-                head_sha: (_c = github.context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.head.sha,
-                output: {
+            let output;
+            if (isTaskCompleted && tasks.completed.length === 0) {
+                output = {
                     title: appName,
-                    summary: isTaskCompleted
-                        ? 'All tasks are completed!'
-                        : 'Some tasks are uncompleted!',
+                    summary: 'No task list',
+                    text: 'No task list'
+                };
+            }
+            else if (isTaskCompleted) {
+                output = {
+                    title: appName,
+                    summary: 'All tasks are completed!',
                     text
-                },
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo
-            };
+                };
+            }
+            else {
+                output = {
+                    title: appName,
+                    summary: 'Some tasks are uncompleted!',
+                    text
+                };
+            }
+            const check = Object.assign({ name: appName, head_sha: pr.head.sha, output, started_at: startTime }, github.context.repo);
             if (isTaskCompleted) {
-                core.debug('Task is completed');
                 check.status = 'completed';
                 check.conclusion = 'success';
                 check.completed_at = new Date().toISOString();
+                core.debug(`Task is completed: ${JSON.stringify(check)}`);
             }
-            else if (handleMissingTaskAsError) {
-                core.debug('Uncompleted tasks - mark as error');
+            else if (handleUncompletedTaskAsError) {
                 check.status = 'completed';
                 check.conclusion = 'failure';
                 check.completed_at = new Date().toISOString();
+                core.debug(`Uncompleted tasks - mark as error: ${JSON.stringify(check)}`);
             }
             else {
-                core.debug('Uncompleted tasks - mark as pending');
                 check.status = 'in_progress';
+                core.debug(`Uncompleted tasks - mark as pending: ${JSON.stringify(check)}`);
             }
             yield githubApi.rest.checks.create(check);
         }
@@ -5989,7 +6019,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTaskListText = exports.getTasks = exports.removeIgnoreTaskListText = void 0;
 const marked_1 = __importDefault(__webpack_require__(886));
 function removeIgnoreTaskListText(text) {
-    return text.replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '').replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '');
+    return text
+        .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '')
+        .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '');
 }
 exports.removeIgnoreTaskListText = removeIgnoreTaskListText;
 function getTasks(text) {
@@ -5997,7 +6029,7 @@ function getTasks(text) {
         completed: [],
         uncompleted: []
     };
-    if (text === null) {
+    if (!text) {
         return result;
     }
     const withoutIgnored = removeIgnoreTaskListText(text);
@@ -6011,13 +6043,11 @@ function getTasks(text) {
         }
     });
     const hasChild = (token) => {
-        const tokens = token
-            .tokens;
+        const tokens = token.tokens;
         return tokens && tokens.length > 0;
     };
     const getFirstChildRaw = (token) => {
-        const tokens = token
-            .tokens;
+        const tokens = token.tokens;
         return tokens[0].raw;
     };
     return {

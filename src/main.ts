@@ -1,78 +1,147 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {removeIgnoreTaskListText, getTasks, createTaskListText} from './utils'
+import {getTasks, createTaskListText} from './utils'
 import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
+import {IssueCommentEvent} from '@octokit/webhooks-types'
+
+interface simplePR {
+  body?: string | null
+  number: number
+  head: {
+    sha: string
+  }
+}
+
+interface simpleComment {
+  body?: string | undefined
+  created_at?: string
+  submitted_at?: string
+}
 
 async function run(): Promise<void> {
   try {
-    const body = github.context.payload.pull_request?.body
+    const startTime = new Date().toISOString()
 
     const token = core.getInput('repo-token', {required: true})
-    const handleMissingTaskAsError = core.getBooleanInput('missing-as-error')
+    const handleUncompletedTaskAsError = core.getBooleanInput('uncompleted-as-error')
+    const scanComments = core.getBooleanInput('scan-comments')
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
 
-    if (!body) {
-      core.info('no task list and skip the process.')
-      await githubApi.rest.checks.create({
-        name: appName,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-        head_sha: github.context.payload.pull_request?.head.sha,
-        status: 'completed',
-        conclusion: 'success',
-        completed_at: new Date().toISOString(),
-        output: {
-          title: appName,
-          summary: 'No task list',
-          text: 'No task list'
-        },
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo
+    let pr: simplePR | undefined = github.context.payload.pull_request as simplePR | undefined
+    core.debug(`Received payload: ${JSON.stringify(github.context.payload)}`)
+    // check if this is an issue rather than pull event
+    if (github.context.eventName === 'issue_comment' && !pr) {
+      const commentPayload = github.context.payload as IssueCommentEvent
+      // if so we need to make sure this is for a PR only
+      if (!commentPayload.issue.pull_request) {
+        core.info('Triggered for issue rather than PR, exit...')
+        return
+      }
+      // & lookup the PR it's for to continue
+      const response = await githubApi.rest.pulls.get({
+        ...github.context.repo,
+        pull_number: commentPayload.issue.number
       })
+      pr = response.data
+    }
+    if (!pr) {
+      core.warning('PR is unknown, exit...')
       return
     }
 
-    const result = removeIgnoreTaskListText(body)
+    const tasks = getTasks(pr.body)
 
-    core.debug('creates a list of tasks which removed ignored task: ')
-    core.debug(result)
+    if (scanComments) {
+      let comments: simpleComment[] = []
+      // lookup comments on the PR
+      const commentsResponse = await githubApi.rest.issues.listComments({
+        ...github.context.repo,
+        per_page: 100,
+        issue_number: pr.number
+      })
+      if (commentsResponse.data.length) {
+        comments = comments.concat(commentsResponse.data)
+      }
 
-    const tasks = getTasks(result)
+      // as well as review comments
+      const reviewCommentsResponse = await githubApi.rest.pulls.listReviews({
+        ...github.context.repo,
+        per_page: 100,
+        pull_number: pr.number
+      })
+      if (reviewCommentsResponse.data.length) {
+        comments = comments.concat(reviewCommentsResponse.data)
+      }
+
+      // and diff level comments on reviews
+      const reviewDiffCommentsResponse = await githubApi.rest.pulls.listReviewComments({
+        ...github.context.repo,
+        per_page: 100,
+        pull_number: pr.number
+      })
+      if (reviewDiffCommentsResponse.data.length) {
+        comments = comments.concat(reviewDiffCommentsResponse.data)
+      }
+
+      // sort comments from oldest to newest
+      comments.sort((a, b) =>
+        (a.created_at || a.submitted_at || '') > (b.created_at || b.submitted_at || '') ? 1 : -1
+      )
+
+      for (const comment of comments) {
+        const commentTasks = getTasks(comment.body)
+        tasks.completed = tasks.completed.concat(commentTasks.completed)
+        tasks.uncompleted = tasks.uncompleted.concat(commentTasks.uncompleted)
+      }
+    }
 
     const isTaskCompleted = tasks.uncompleted.length === 0
-
     const text = createTaskListText(tasks)
 
-    core.debug('creates a list of completed tasks and uncompleted tasks: ')
+    core.debug('created a list of completed tasks and uncompleted tasks:')
     core.debug(text)
 
+    let output
+    if (isTaskCompleted && tasks.completed.length === 0) {
+      output = {
+        title: appName,
+        summary: 'No task list',
+        text: 'No task list'
+      }
+    } else if (isTaskCompleted) {
+      output = {
+        title: appName,
+        summary: 'All tasks are completed!',
+        text
+      }
+    } else {
+      output = {
+        title: appName,
+        summary: 'Some tasks are uncompleted!',
+        text
+      }
+    }
     const check: RestEndpointMethodTypes['checks']['create']['parameters'] = {
       name: appName,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      head_sha: github.context.payload.pull_request?.head.sha,
-      output: {
-        title: appName,
-        summary: isTaskCompleted
-          ? 'All tasks are completed!'
-          : 'Some tasks are uncompleted!',
-        text
-      },
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo
+      head_sha: pr.head.sha,
+      output,
+      started_at: startTime,
+      ...github.context.repo
     }
     if (isTaskCompleted) {
-      core.debug('Task is completed')
       check.status = 'completed'
       check.conclusion = 'success'
       check.completed_at = new Date().toISOString()
-    } else if (handleMissingTaskAsError) {
-      core.debug('Uncompleted tasks - mark as error')
+      core.debug(`Task is completed: ${JSON.stringify(check)}`)
+    } else if (handleUncompletedTaskAsError) {
       check.status = 'completed'
       check.conclusion = 'failure'
       check.completed_at = new Date().toISOString()
+      core.debug(`Uncompleted tasks - mark as error: ${JSON.stringify(check)}`)
     } else {
-      core.debug('Uncompleted tasks - mark as pending')
       check.status = 'in_progress'
+      core.debug(`Uncompleted tasks - mark as pending: ${JSON.stringify(check)}`)
     }
     await githubApi.rest.checks.create(check)
   } catch (error) {
