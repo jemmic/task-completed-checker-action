@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {removeIgnoreTaskListText, createTaskListText} from './utils'
+import {removeIgnoreTaskListText, getTasks, createTaskListText} from './utils'
 import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
 
 async function run(): Promise<void> {
@@ -37,9 +37,12 @@ async function run(): Promise<void> {
     core.debug('creates a list of tasks which removed ignored task: ')
     core.debug(result)
 
-    const isTaskCompleted = result.match(/([-*] \[[ ]\].+)/g) === null
+    const tasks = getTasks(result)
 
-    const text = createTaskListText(result)
+
+    const isTaskCompleted = tasks.uncompleted.length === 0
+
+    const text = createTaskListText(tasks)
 
     core.debug('creates a list of completed tasks and uncompleted tasks: ')
     core.debug(text)

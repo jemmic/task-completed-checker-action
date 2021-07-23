@@ -1,4 +1,4 @@
-import {removeIgnoreTaskListText, createTaskListText} from '../src/utils'
+import {removeIgnoreTaskListText, getTasks, createTaskListText} from '../src/utils'
 
 describe('removeIgnoreTaskListText', () => {
   it('removes multiple ignore task list from task list text.', () => {
@@ -63,21 +63,23 @@ describe('removeIgnoreTaskListText', () => {
 describe('createTaskListText', () => {
   it('creates a list of completed tasks', () => {
     const text = `## Issue Type
-    
-    
-    ## Checklist
-    - [x] I have read the [CONTRIBUTING.md]()
-    * [x] I have made corresponding changes to the documentation
-    - [x] My changes generate no lint errors
-    - [x] I have added tests that prove my fix is effective or that my feature works
-    - [x] New and existing unit tests pass locally with my changes`
 
-    const result = createTaskListText(text)
+
+## Checklist
+- [x] I have read the [CONTRIBUTING.md]()
+* [x] I have made corresponding changes to the **documentation**
+* Not a task list item
+- [x] My changes generate no _lint_ errors
+  - [x] I have added tests that prove my fix is effective or that my feature works
+  - Another not a task list item
+  - [x] New and existing unit tests pass locally with my changes`
+
+    const result = createTaskListText(getTasks(text))
 
     expect(result).toEqual(`## :white_check_mark: Completed Tasks
 - [x] I have read the [CONTRIBUTING.md]()
-* [x] I have made corresponding changes to the documentation
-- [x] My changes generate no lint errors
+- [x] I have made corresponding changes to the **documentation**
+- [x] My changes generate no _lint_ errors
 - [x] I have added tests that prove my fix is effective or that my feature works
 - [x] New and existing unit tests pass locally with my changes
 `)
@@ -85,23 +87,23 @@ describe('createTaskListText', () => {
 
   it('creates a list of completed tasks and uncompleted tasks', () => {
     const text = `## Issue Type
-    
-    
-    ## Checklist
-    - [x] I have read the [CONTRIBUTING.md]()
-    * [ ] I have made corresponding changes to the documentation
-    * [X] My changes generate no lint errors
-    - [ ] I have added tests that prove my fix is effective or that my feature works
-    - [x] New and existing unit tests pass locally with my changes`
 
-    const result = createTaskListText(text)
+
+## Checklist
+- [x] I have read the [CONTRIBUTING.md]()
+- [ ] I have made corresponding changes to the documentation
+- [X] My changes generate no lint errors
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [x] New and existing unit tests pass locally with my changes`
+
+    const result = createTaskListText(getTasks(text))
 
     expect(result).toEqual(`## :white_check_mark: Completed Tasks
 - [x] I have read the [CONTRIBUTING.md]()
-* [X] My changes generate no lint errors
+- [x] My changes generate no lint errors
 - [x] New and existing unit tests pass locally with my changes
 ## :x: Uncompleted Tasks
-* [ ] I have made corresponding changes to the documentation
+- [ ] I have made corresponding changes to the documentation
 - [ ] I have added tests that prove my fix is effective or that my feature works
 `)
   })
