@@ -2,6 +2,7 @@ name: 'PR Tasks Check'
 on: 
   pull_request:
     types: [opened, edited]
+  push:
 
 jobs:
   task-check:
