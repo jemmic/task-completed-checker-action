@@ -8,7 +8,7 @@ async function run(): Promise<void> {
     const body = github.context.payload.pull_request?.body
 
     const token = core.getInput('repo-token', {required: true})
-    const handleMissingTaskAsError = core.getBooleanInput('missing-as-error')
+    const handleUncompletedTaskAsError = core.getBooleanInput('uncompleted-as-error')
     const scanComments = core.getBooleanInput('scan-comments')
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
@@ -66,7 +66,7 @@ async function run(): Promise<void> {
       check.status = 'completed'
       check.conclusion = 'success'
       check.completed_at = new Date().toISOString()
-    } else if (handleMissingTaskAsError) {
+    } else if (handleUncompletedTaskAsError) {
       core.debug('Uncompleted tasks - mark as error')
       check.status = 'completed'
       check.conclusion = 'failure'

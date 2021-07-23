@@ -25,7 +25,7 @@ jobs:
       - uses: jemmic/task-completed-checker-action@v1.0.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          missing-as-error: false
+          uncompleted-as-error: false
 ```
 
 ### Check whether tasks are completed
@@ -82,12 +82,12 @@ Please surround the task list with `<!-- ignore-task-list-start -->` and `<!-- i
 
 ### Treat uncompleted tasks as error
 By default, Tasks Completed Check treats uncompleted tasks as pending.
-By setting the optional `missing-as-error` parameter to `true`, uncompleted tasks will be treated as an error.
+By setting the optional `uncompleted-as-error` parameter to `true`, if there are uncompleted tasks this will be treated as an error.
 ```
       - uses: jemmic/task-completed-checker-action@v1.0.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          missing-as-error: true
+          uncompleted-as-error: true
 ```
 
 ![Check whether tasks are completed (treated as error)](check_result_error.png)
