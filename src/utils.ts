@@ -2,14 +2,8 @@ import marked from 'marked'
 
 export function removeIgnoreTaskListText(text: string): string {
   return text
-    .replace(
-      /<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g,
-      ''
-    )
-    .replace(
-      /<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g,
-      ''
-    )
+    .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '')
+    .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '')
 }
 
 export interface Tasks {
@@ -36,13 +30,11 @@ export function getTasks(text: string): Tasks {
     }
   })
   const hasChild = (token: marked.Tokens.ListItem): boolean => {
-    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]})
-      .tokens
+    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]}).tokens
     return tokens && tokens.length > 0
   }
   const getFirstChildRaw = (token: marked.Tokens.ListItem): string => {
-    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]})
-      .tokens
+    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]}).tokens
     return tokens[0].raw
   }
   return {
