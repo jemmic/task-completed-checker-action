@@ -2,6 +2,9 @@ name: 'PR Tasks Check'
 on: 
   pull_request:
     types: [opened, edited, synchronize]
+  issue_comment:
+  pull_request_review:
+  pull_request_review_comment:
 
 permissions:
   # Pull requests and related comments, assignees, labels, milestones, and merges.
@@ -18,3 +21,4 @@ jobs:
       - uses: jemmic/task-completed-checker-action@master
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          scan-comments: true
