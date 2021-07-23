@@ -10,6 +10,14 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
+permissions:
+  # Pull requests and related comments, assignees, labels, milestones, and merges.
+  # https://developer.github.com/v3/apps/permissions/#permission-on-pull-requests
+  pull-requests: read
+  # Checks on code.
+  # https://developer.github.com/v3/apps/permissions/#permission-on-checks
+  checks: write
+
 jobs:
   task-check:
     runs-on: ubuntu-latest
