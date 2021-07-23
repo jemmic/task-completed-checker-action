@@ -39,7 +39,6 @@ async function run(): Promise<void> {
 
     const tasks = getTasks(result)
 
-
     const isTaskCompleted = tasks.uncompleted.length === 0
 
     const text = createTaskListText(tasks)

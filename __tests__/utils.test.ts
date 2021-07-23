@@ -92,6 +92,8 @@ describe('createTaskListText', () => {
 ## Checklist
 - [x] I have read the [CONTRIBUTING.md]()
 - [ ] I have made corresponding changes to the documentation
+* [ ] 
+* [x]
 - [X] My changes generate no lint errors
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [x] New and existing unit tests pass locally with my changes`

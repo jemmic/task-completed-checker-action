@@ -16,11 +16,11 @@ export function getTasks(text: string): Tasks {
   const result = {
     completed: [],
     uncompleted: []
-  };
+  }
   if (text === null) {
     return result
   }
-  let withoutIgnored = removeIgnoreTaskListText(text)
+  const withoutIgnored = removeIgnoreTaskListText(text)
   const list_items: marked.Tokens.ListItem[] = []
   marked(withoutIgnored, {
     gfm: true,
@@ -29,10 +29,24 @@ export function getTasks(text: string): Tasks {
         list_items.push(token)
       }
     }
-  });
+  })
+  const hasChild = (token: marked.Tokens.ListItem): boolean => {
+    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]})
+      .tokens
+    return tokens && tokens.length > 0
+  }
+  const getFirstChildRaw = (token: marked.Tokens.ListItem): string => {
+    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]})
+      .tokens
+    return tokens[0].raw
+  }
   return {
-    completed: list_items.filter(token => token.checked === true).map(token => (token as unknown as {tokens: marked.Tokens.ListItem[]}).tokens[0].raw),
-    uncompleted: list_items.filter(token => token.checked === false).map(token => (token as unknown as {tokens: marked.Tokens.ListItem[]}).tokens[0].raw)
+    completed: list_items
+      .filter(token => token.checked === true && hasChild(token))
+      .map(token => getFirstChildRaw(token)),
+    uncompleted: list_items
+      .filter(token => token.checked === false && hasChild(token))
+      .map(token => getFirstChildRaw(token))
   }
 }
 
