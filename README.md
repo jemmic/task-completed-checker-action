@@ -22,7 +22,7 @@ jobs:
   task-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: jemmic/task-completed-checker-action@v1.0.0
+      - uses: jemmic/task-completed-checker-action@v1.2.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           uncompleted-as-error: false
@@ -99,8 +99,22 @@ You can check a list of completed tasks and uncompleted tasks at the Actions pag
 ### Scan all comments for tasks as well
 By default, Tasks Completed Check only scans the pull-request description for task lists.
 By setting the optional `scan-comments` parameter to `true`, also all comments on a pull request (comment, review, review comment) will be scanned for task lists.
+
+If comments should be scanned, we need to specify the following on events:
+
 ```
-      - uses: jemmic/task-completed-checker-action@v1.0.0
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+  issue_comment:
+  pull_request_review:
+  pull_request_review_comment:
+```
+
+The `scan-comments` parameter needs to be passed to the `task-completed-checker-action`:
+
+```
+      - uses: jemmic/task-completed-checker-action@v1.2.0
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           scan-comments: true
