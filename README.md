@@ -72,5 +72,21 @@ Please surround the task list with `<!-- ignore-task-list-start -->` and `<!-- i
 - [x] New and existing unit tests pass locally with my changes
 ```
 
+### Treat uncompleted tasks as error
+By default, Tasks Completed Check treats uncompleted tasks as pending.
+By setting the optional `missing-as-error` parameter to `true`, uncompleted tasks will be treated as an error.
+```
+      - uses: jemmic/task-completed-checker-action@v1.0.0
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          missing-as-error: true
+```
+
+![Check whether tasks are completed (treated as error)](check_result_error.png)
+
+You can check a list of completed tasks and uncompleted tasks at the Actions page.
+
+![Check a list of completed/uncompleted tasks (treated as error)](actions_console_error.png)
+
 ## :memo: Licence
 MIT
