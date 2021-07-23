@@ -11,7 +11,7 @@ export interface Tasks {
   uncompleted: string[]
 }
 
-export function getTasks(text: string): Tasks {
+export function getTasks(text?: string | null): Tasks {
   const result = {
     completed: [],
     uncompleted: []

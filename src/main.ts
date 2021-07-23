@@ -1,8 +1,22 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {removeIgnoreTaskListText, getTasks, createTaskListText} from './utils'
+import {getTasks, createTaskListText} from './utils'
 import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
 import {IssueCommentEvent} from '@octokit/webhooks-types'
+
+interface simplePR {
+  body?: string | null
+  number: number
+  head: {
+    sha: string
+  }
+}
+
+interface simpleComment {
+  body?: string | undefined
+  created_at?: string
+  submitted_at?: string
+}
 
 async function run(): Promise<void> {
   try {
@@ -14,10 +28,10 @@ async function run(): Promise<void> {
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
 
-    let pr: any = github.context.payload.pull_request
+    let pr: simplePR | undefined = github.context.payload.pull_request
     core.debug(`Received payload: ${JSON.stringify(github.context.payload)}`)
     // check if this is an issue rather than pull event
-    if (github.context.eventName == 'issue_comment' && !pr) {
+    if (github.context.eventName === 'issue_comment' && !pr) {
       const commentPayload = github.context.payload as IssueCommentEvent
       // if so we need to make sure this is for a PR only
       if (!commentPayload.issue.pull_request) {
@@ -31,11 +45,15 @@ async function run(): Promise<void> {
       })
       pr = response.data
     }
+    if (!pr) {
+      core.warning('PR is unknown, exit...')
+      return
+    }
 
     const tasks = getTasks(pr.body)
 
     if (scanComments) {
-      let comments: any = []
+      let comments: simpleComment[] = []
       // lookup comments on the PR
       const commentsResponse = await githubApi.rest.issues.listComments({
         ...github.context.repo,
@@ -67,7 +85,9 @@ async function run(): Promise<void> {
       }
 
       // sort comments from oldest to newest
-      comments.sort((a: any, b: any) => ((a.created_at || a.submitted_at) > (b.created_at || b.submitted_at) ? 1 : -1))
+      comments.sort((a, b) =>
+        (a.created_at || a.submitted_at || '') > (b.created_at || b.submitted_at || '') ? 1 : -1
+      )
 
       for (const comment of comments) {
         const commentTasks = getTasks(comment.body)
@@ -104,7 +124,6 @@ async function run(): Promise<void> {
     }
     const check: RestEndpointMethodTypes['checks']['create']['parameters'] = {
       name: appName,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       head_sha: pr.head.sha,
       output,
       started_at: startTime,
