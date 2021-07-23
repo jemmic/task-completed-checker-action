@@ -5,6 +5,7 @@ import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
 
 async function run(): Promise<void> {
   try {
+    const startTime = (new Date).toISOString();
     const body = github.context.payload.pull_request?.body
 
     const token = core.getInput('repo-token', {required: true})
@@ -58,6 +59,7 @@ async function run(): Promise<void> {
           : 'Some tasks are uncompleted!',
         text
       },
+      started_at: startTime,
       owner: github.context.repo.owner,
       repo: github.context.repo.repo
     }
