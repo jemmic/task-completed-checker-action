@@ -9,6 +9,7 @@ async function run(): Promise<void> {
 
     const token = core.getInput('repo-token', {required: true})
     const handleMissingTaskAsError = core.getBooleanInput('missing-as-error')
+    const scanComments = core.getBooleanInput('scan-comments')
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
 

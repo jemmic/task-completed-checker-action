@@ -96,5 +96,15 @@ You can check a list of completed tasks and uncompleted tasks at the Actions pag
 
 ![Check a list of completed/uncompleted tasks (treated as error)](actions_console_error.png)
 
+### Scan all comments for tasks as well
+By default, Tasks Completed Check only scans the pull-request description for task lists.
+By setting the optional `scan-comments` parameter to `true`, also all comments on a pull request (comment, review, review comment) will be scanned for task lists.
+```
+      - uses: jemmic/task-completed-checker-action@v1.0.0
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          scan-comments: true
+```
+
 ## :memo: Licence
 MIT
