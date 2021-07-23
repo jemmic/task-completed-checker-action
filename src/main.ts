@@ -116,9 +116,11 @@ async function run(): Promise<void> {
         text
       }
     } else {
+      const uncompleted = tasks.uncompleted.length
+      const total = tasks.completed.length + tasks.uncompleted.length
       output = {
         title: appName,
-        summary: 'Some tasks are uncompleted!',
+        summary: `${uncompleted}/${total} task${uncompleted > 1 ? 's' : ''} still to be completed!`,
         text
       }
     }
