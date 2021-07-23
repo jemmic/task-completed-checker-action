@@ -21,4 +21,5 @@ jobs:
       - uses: jemmic/task-completed-checker-action@master
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          uncompleted-as-error: true
           scan-comments: true
