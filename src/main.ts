@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {removeIgnoreTaskListText, getTasks, createTaskListText} from './utils'
 import {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
+import {PullRequestEvent, PushEvent} from '@octokit/webhooks-types'
 
 async function run(): Promise<void> {
   try {
@@ -12,12 +13,30 @@ async function run(): Promise<void> {
     const githubApi = github.getOctokit(token)
     const appName = 'Task Completed Checker'
 
+    let sha = ''
+    if (github.context.eventName === 'push') {
+      const pushPayload = github.context.payload as PushEvent
+      if (!pushPayload.head_commit) {
+        core.warning('Unknown commit, ignoring this push event')
+        return
+      }
+      sha = pushPayload.head_commit.id
+    }
+    if (github.context.eventName === 'pull_request') {
+      const prPayload = github.context.payload as PullRequestEvent
+      sha = prPayload.pull_request?.head.sha
+    }
+    if (!sha) {
+      core.warning('Unknown sha, ignoring this action')
+      return
+    }
+    core.debug(`The head commit is: ${sha}`)
+
     if (!body) {
       core.info('no task list and skip the process.')
       await githubApi.rest.checks.create({
         name: appName,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-        head_sha: github.context.payload.pull_request?.head.sha,
+        head_sha: sha,
         status: 'completed',
         conclusion: 'success',
         completed_at: new Date().toISOString(),
@@ -48,8 +67,7 @@ async function run(): Promise<void> {
 
     const check: RestEndpointMethodTypes['checks']['create']['parameters'] = {
       name: appName,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      head_sha: github.context.payload.pull_request?.head.sha,
+      head_sha: sha,
       output: {
         title: appName,
         summary: isTaskCompleted

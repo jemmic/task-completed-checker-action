@@ -646,7 +646,7 @@ const core = __importStar(__webpack_require__(470));
 const github = __importStar(__webpack_require__(469));
 const utils_1 = __webpack_require__(611);
 function run() {
-    var _a, _b, _c;
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const body = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.body;
@@ -654,12 +654,29 @@ function run() {
             const handleMissingTaskAsError = core.getBooleanInput('missing-as-error');
             const githubApi = github.getOctokit(token);
             const appName = 'Task Completed Checker';
+            let sha = '';
+            if (github.context.eventName === 'push') {
+                const pushPayload = github.context.payload;
+                if (!pushPayload.head_commit) {
+                    core.warning('Unknown commit, ignoring this push event');
+                    return;
+                }
+                sha = pushPayload.head_commit.id;
+            }
+            if (github.context.eventName === 'pull_request') {
+                const prPayload = github.context.payload;
+                sha = (_b = prPayload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+            }
+            if (!sha) {
+                core.warning('Unknown sha, ignoring this action');
+                return;
+            }
+            core.debug(`The head commit is: ${sha}`);
             if (!body) {
                 core.info('no task list and skip the process.');
                 yield githubApi.rest.checks.create({
                     name: appName,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-                    head_sha: (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha,
+                    head_sha: sha,
                     status: 'completed',
                     conclusion: 'success',
                     completed_at: new Date().toISOString(),
@@ -683,8 +700,7 @@ function run() {
             core.debug(text);
             const check = {
                 name: appName,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-                head_sha: (_c = github.context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.head.sha,
+                head_sha: sha,
                 output: {
                     title: appName,
                     summary: isTaskCompleted
@@ -5989,7 +6005,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTaskListText = exports.getTasks = exports.removeIgnoreTaskListText = void 0;
 const marked_1 = __importDefault(__webpack_require__(886));
 function removeIgnoreTaskListText(text) {
-    return text.replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '').replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '');
+    return text
+        .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*?<!--\s*ignore-task-list-end\s*-->/g, '')
+        .replace(/<!--\s*ignore-task-list-start\s*-->[\d\D]*(?!<!--\s*ignore-task-list-end\s*-->)/g, '');
 }
 exports.removeIgnoreTaskListText = removeIgnoreTaskListText;
 function getTasks(text) {
