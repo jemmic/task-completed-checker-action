@@ -22,7 +22,7 @@ jobs:
   task-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: jemmic/task-completed-checker-action@v1.2.0
+      - uses: jemmic/task-completed-checker-action@v1.2.1
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           uncompleted-as-error: false
@@ -114,7 +114,7 @@ on:
 The `scan-comments` parameter needs to be passed to the `task-completed-checker-action`:
 
 ```
-      - uses: jemmic/task-completed-checker-action@v1.2.0
+      - uses: jemmic/task-completed-checker-action@v1.2.1
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           scan-comments: true
