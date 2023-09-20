@@ -146,9 +146,9 @@ async function run(): Promise<void> {
       core.debug(`Uncompleted tasks - mark as pending: ${JSON.stringify(check)}`)
     }
     await githubApi.rest.checks.create(check)
-  } catch (err: unknown) {
+  } catch (err) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    core.setFailed(err.message)
+    core.setFailed((err as Error).message)
   }
 }
 
