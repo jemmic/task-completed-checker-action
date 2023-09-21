@@ -2,9 +2,9 @@ name: 'Task Completed Checker'
 description: 'An action that checks if all tasks are completed in the pull requests.'
 author: 'kentaro-m (forked by kamphaus)'
 runs:
-  using: 'node16'
+  using: 'node18'
   main: 'dist/index.js'
-inputs: 
+inputs:
   repo-token:
     description: 'The GITHUB_TOKEN secret'
     required: true
