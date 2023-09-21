@@ -147,7 +147,6 @@ async function run(): Promise<void> {
     }
     await githubApi.rest.checks.create(check)
   } catch (err) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     core.setFailed((err as Error).message)
   }
 }
