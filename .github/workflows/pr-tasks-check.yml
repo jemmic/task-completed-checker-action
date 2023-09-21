@@ -18,7 +18,7 @@ jobs:
   task-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: jemmic/task-completed-checker-action@master
+      - uses: jemmic/task-completed-checker-action@SC-8413_dowgrade_to_node16
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           scan-comments: true
