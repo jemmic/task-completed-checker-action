@@ -30,11 +30,11 @@ export function getTasks(text?: string | null): Tasks {
     }
   })
   const hasChild = (token: marked.Tokens.ListItem): boolean => {
-    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]}).tokens
+    const tokens = (token as unknown as {tokens: marked.Tokens.ListItem[]}).tokens
     return tokens && tokens.length > 0
   }
   const getFirstChildRaw = (token: marked.Tokens.ListItem): string => {
-    const tokens = ((token as unknown) as {tokens: marked.Tokens.ListItem[]}).tokens
+    const tokens = (token as unknown as {tokens: marked.Tokens.ListItem[]}).tokens
     return tokens[0].raw
   }
   return {
